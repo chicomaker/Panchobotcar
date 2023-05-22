@@ -1,0 +1,133 @@
+//este es una version para el codigo de pancho que incluye el accionar de un servomotor y un control de velocidad distinto uwu
+
+#include <ESP8266WiFi.h>
+#include <Servo.h>
+
+const char* ssid = "PanchoWifi";
+const char* password = "12345";
+WiFiServer server(80);
+
+// Configuración del puente H
+const int PWMA = 15;
+const int AIN1 = 14;
+const int AIN2 = 12;
+const int PWMB = 13;
+const int BIN1 = 4;
+const int BIN2 = 5;
+const int STBY = 0;
+
+Servo servoMotor;                 // Instancia del objeto servo motor
+int servoAngle = 0;               // Ángulo del servo motor (inicialmente 0)
+int estado = HIGH;                // Estado del servo motor (inicialmente alto)
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  delay(10);
+
+  servoMotor.attach(2);          // Asigna el pin 2 al servo motor
+
+  server.begin();                         // Inicializamos el servidor
+  WiFi.mode(WIFI_AP);                     // Definimos el modo del WiFi como Access Point
+  WiFi.softAP(ssid);                      // Creamos una red Wi-Fi abierta
+}
+
+void loop() {
+  // Check if a client has connected
+  WiFiClient client = server.available();
+  if (!client) {
+    return;
+  }
+
+  // Wait until the client sends some data
+  Serial.println("new client");
+  while (!client.available()) {
+    delay(1);
+  }
+
+  String request = client.readStringUntil('\r');
+  Serial.println(request);
+  client.flush();
+
+  // Comprueba la petición
+  if (request.indexOf("/on") != -1) {
+    estado = LOW;
+  }
+  if (request.indexOf("/off") != -1) {
+    estado = HIGH;
+  }
+
+  // Control servo motor based on the request
+  if (estado == LOW) {
+    servoMotor.write(190);        // Mueve el servo motor a 190°
+  } else {
+    servoMotor.write(10);         // Mueve el servo motor a 10°
+  }
+
+  // Control motor based on the velocity value
+  float velocidad = handleMotorFWBWRequest(request);
+
+  // Control motor based on the direction request
+  if (request.indexOf("/Izquierda") != -1) {
+    digitalWrite(AIN1, HIGH);
+    digitalWrite(AIN2, LOW);
+    analogWrite(PWMA, velocidad);
+
+    digitalWrite(BIN1, HIGH);
+    digitalWrite(BIN2, LOW);
+    analogWrite(PWMB, velocidad);
+  } else if (request.indexOf("/Derecha") != -1) {
+    digitalWrite(AIN1, LOW);
+    digitalWrite(AIN2, HIGH);
+    analogWrite(PWMA, velocidad);
+
+    digitalWrite(BIN1, LOW);
+    digitalWrite(BIN2, HIGH);
+    analogWrite(PWMB, velocidad);
+  } else if (request.indexOf("/Atras") != -1) {
+    digitalWrite(AIN1, HIGH);
+    digitalWrite(AIN2, LOW);
+    analogWrite(PWMA, velocidad);
+    digitalWrite(BIN1, LOW);
+    digitalWrite(BIN2, HIGH);
+    analogWrite(PWMB, velocidad);
+  } else if (request.indexOf("/Adelante") != -1) {
+    digitalWrite(AIN1, LOW);
+    digitalWrite(AIN2, HIGH);
+    analogWrite(PWMA, velocidad);
+    digitalWrite(BIN1, HIGH);
+    digitalWrite(BIN2, LOW);
+    analogWrite(PWMB, velocidad);
+  } else if (request.indexOf("/Detener") != -1) {
+    digitalWrite(AIN1, LOW);
+    digitalWrite(AIN2, LOW);
+    analogWrite(PWMA, LOW);
+    digitalWrite(BIN1, LOW);
+    digitalWrite(BIN2, LOW);
+    analogWrite(PWMB, LOW);
+  }
+
+  // Detener el movimiento del segundo motor del puente H
+  digitalWrite(PWMB, LOW);
+  digitalWrite(BIN1, LOW);
+  digitalWrite(BIN2, LOW);
+
+  // Esperar un segundo antes de enviar la respuesta
+  delay(100);
+
+  Serial.println("Client disconnected");
+}
+
+float handleMotorFWBWRequest(String request) {
+  // Aquí debes implementar el código para procesar la solicitud y determinar la velocidad del motor
+  // Puedes utilizar la información en la solicitud para calcular la velocidad deseada
+  // y devolverla como un valor float.
+  // Por ejemplo, si estás enviando un valor numérico en la solicitud, puedes extraerlo y utilizarlo para establecer la velocidad.
+  // Si no necesitas este manejo específico, simplemente devuelve un valor de velocidad predeterminado.
+  
+  float velocidad = 0.0; // Velocidad predeterminada
+  
+  // Procesar la solicitud aquí y actualizar la variable "velocidad" según sea necesario
+  
+  return velocidad;
+}
