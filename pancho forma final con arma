@@ -19,7 +19,7 @@ int servoAngle = 90;
 void setup() {
   Serial.begin(9600);
   delay(10);
-  
+
   servoMotor.attach(2);
 
   server.begin();
@@ -37,6 +37,8 @@ void setup() {
 }
 
 void loop() {
+  int estado = HIGH;
+
   WiFiClient client = server.available();
   if (!client) {
     return;
@@ -57,12 +59,12 @@ void loop() {
   }
 
   if (estado == LOW) {
-    digitalWrite(PinLED, LOW);
+    digitalWrite(2, LOW); 
     servoAngle = 10;
     servoMotor.write(servoAngle);
   }
   else {
-    digitalWrite(PinLED, HIGH);
+    digitalWrite(2, HIGH); // Reemplaza el número de pin con el correspondiente al LED
     servoAngle = 90;
     servoMotor.write(servoAngle);
   }
@@ -126,5 +128,5 @@ void loop() {
 
   delay(100);
 
-  Serial.println("Client disonnected");
+  Serial.println("Client disconnected");
 }
