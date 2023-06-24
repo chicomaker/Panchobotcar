@@ -1,12 +1,10 @@
-// este codigo sirve para controlar a pancho por wifi utilizando una app de app inventor o por defecto introduciendo el comando en el servidor 
-
 #include <ESP8266WiFi.h>
+#include <Servo.h>
 
 const char* ssid = "PanchoWifi";
 const char* password = "12345";
 WiFiServer server(80);
 
-// Configuración del puente H
 const int PWMA = 15;
 const int AIN1 = 14;
 const int AIN2 = 12;
@@ -15,40 +13,18 @@ const int BIN1 = 4;
 const int BIN2 = 5;
 const int STBY = 0;
 
-int PinLED = 2;                           //Definimos el pin de salida - GPIO2 / D4
-int estado = HIGH;
+Servo servoMotor;
+int servoAngle = 90;
 
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(9600);
   delay(10);
-  pinMode(PinLED, OUTPUT);        //Inicializamos el GPIO2 como salida
-  digitalWrite(PinLED, HIGH);
 
-  server.begin();                         //inicializamos el servidor
-  WiFi.mode(WIFI_AP);                     // Definimos el modo del WiFi como Access Point
-  // WiFi.softAP(ssid, password);            //Red con clave, en el canal 1 y visible
+  servoMotor.attach(2);
 
-  //WiFi.softAP(ssid, password,3,1);      //Otra opción: Red con clave, en el canal 3 y visible
-  WiFi.softAP(ssid);                    //Otra opción: Red abierta
+  server.begin();
+  WiFi.mode(WIFI_AP);
 
-  Serial.println();                       // Enviamos un salto de línea en el monitor serial
-
-  Serial.print("Direccion IP Access Point - por defecto: ");      //Imprime la dirección IP en el monitor serial
-  Serial.println(WiFi.softAPIP());
-  Serial.print("Direccion MAC Access Point: ");                   //Imprime la dirección MAC en el monitor serial
-  Serial.println(WiFi.softAPmacAddress());
-
-  //IPAddress local_ip(192, 168, 1, 1);                           //Modifica la dirección IP
-  //IPAddress gateway(192, 168, 1, 1);
-  //IPAddress subnet(255, 255, 255, 0);
-  //WiFi.softAPConfig(local_ip, gateway, subnet);
-  //Serial.println();
-  //Serial.print("Access Point - Nueva direccion IP: ");
-  //Serial.println(WiFi.softAPIP());
-
-
-  // Inicializar el puente H
   pinMode(AIN1, OUTPUT);
   pinMode(AIN2, OUTPUT);
   pinMode(PWMA, OUTPUT);
@@ -58,30 +34,23 @@ void setup() {
   pinMode(STBY, OUTPUT);
 
   digitalWrite(STBY, HIGH);
-
-
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  int estado = HIGH;
 
-  // Check if a client has connected
   WiFiClient client = server.available();
   if (!client) {
     return;
   }
 
-  // Wait until the client sends some data
-  Serial.println("new client");
   while (!client.available()) {
     delay(1);
   }
 
   String peticion = client.readStringUntil('\r');
-  Serial.println(peticion);
   client.flush();
 
-  // Comprueba la petición
   if (peticion.indexOf("/on") != -1) {
     estado = LOW;
   }
@@ -89,17 +58,17 @@ void loop() {
     estado = HIGH;
   }
 
-  //Enciende o apaga el LED en función de la petición
   if (estado == LOW) {
-    digitalWrite(PinLED, LOW);
+    digitalWrite(2, LOW); 
+    servoAngle = 10;
+    servoMotor.write(servoAngle);
   }
   else {
-    digitalWrite(PinLED, HIGH);
+    digitalWrite(2, HIGH); // Reemplaza el número de pin con el correspondiente al LED
+    servoAngle = 90;
+    servoMotor.write(servoAngle);
   }
 
-
-
-  // Interpretar la petición y controlar el puente H
   if (peticion.indexOf("/Izquierda") != -1) {
     digitalWrite(AIN1, HIGH);
     digitalWrite(AIN2, LOW);
@@ -138,7 +107,7 @@ void loop() {
     analogWrite(PWMB, 200);
 
     delay(200);
-     } else if (peticion.indexOf("/Detener") != -1) {
+  } else if (peticion.indexOf("/Detener") != -1) {
     digitalWrite(AIN1, LOW);
     digitalWrite(AIN2, LOW);
     analogWrite(PWMA, LOW);
@@ -149,7 +118,6 @@ void loop() {
     delay(200);
   }
 
-  // Detener el movimiento del puente H
   digitalWrite(PWMA, LOW);
   digitalWrite(AIN1, LOW);
   digitalWrite(AIN2, LOW);
@@ -158,9 +126,7 @@ void loop() {
   digitalWrite(BIN1, LOW);
   digitalWrite(BIN2, LOW);
 
-  // Esperar un segundo antes de enviar la respuesta
   delay(100);
 
-  Serial.println("Client disonnected");
-
+  Serial.println("Client disconnected");
 }
